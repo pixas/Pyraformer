@@ -2,7 +2,7 @@ from torch.functional import align_tensors
 import torch.nn as nn
 
 from torch.nn.modules.linear import Linear
-from .SubLayers import MultiHeadAttention, PositionwiseFeedForward
+from .SubLayers import AMLPLayer, MultiHeadAttention, PositionwiseFeedForward
 import torch
 from .embed import DataEmbedding, CustomEmbedding
 import math
@@ -166,18 +166,52 @@ def get_k_q(q_k_mask):
 class EncoderLayer(nn.Module):
     """ Compose with two layers """
 
-    def __init__(self, d_model, d_inner, n_head, d_k, d_v, dropout=0.1, normalize_before=True, use_tvm=False, q_k_mask=None, k_q_mask=None):
+    def __init__(self, opt, normalize_before=True, use_tvm=False, q_k_mask=None, k_q_mask=None):
         super(EncoderLayer, self).__init__()
+        d_model = opt.d_model
+        n_head = opt.n_head
+        d_k = opt.d_k
+        d_v = opt.d_v
+        dropout=opt.dropout
+        d_inner = opt.d_inner_hid
+        attn_type = opt.attn_type
+        self.normalize_before = normalize_before
         self.use_tvm = use_tvm
         if use_tvm:
             from .PAM_TVM import PyramidalAttention
             self.slf_attn = PyramidalAttention(n_head, d_model, d_k, d_v, dropout=dropout, normalize_before=normalize_before, q_k_mask=q_k_mask, k_q_mask=k_q_mask)
         else:
-            self.slf_attn = MultiHeadAttention(n_head, d_model, d_k, d_v, dropout=dropout, normalize_before=normalize_before)
+
+            self.slf_attn = self.build_self_attention(opt)
 
         self.pos_ffn = PositionwiseFeedForward(
             d_model, d_inner, dropout=dropout, normalize_before=normalize_before)
 
+    def build_self_attention(self, opt):
+        if opt.attn_type == 'amlp':
+            attn = AMLPLayer(
+                opt.n_head,
+                opt.d_model,
+                opt.d_k,
+                opt.d_v,
+                opt.dropout,
+                normalize_before=self.normalize_before,
+                ffn_dimension=opt.amlp_dim,
+                activation_fn=opt.amlp_fn
+            )
+        else:
+            attn = MultiHeadAttention(
+                opt.n_head,
+                opt.d_model,
+                opt.d_k,
+                opt.d_v,
+                dropout = opt.dropout,
+                normalize_before=self.normalize_before
+            )
+        
+        return attn
+    
+    
     def forward(self, enc_input, slf_attn_mask=None):
         if self.use_tvm:
             enc_output = self.slf_attn(enc_input)

@@ -312,6 +312,11 @@ def parse_args():
     parser.add_argument('-d_bottleneck', type=int, default=128)
     parser.add_argument('-n_head', type=int, default=4)
     parser.add_argument('-n_layer', type=int, default=4)
+    parser.add_argument('-attn_type', default='mha')
+    
+    # AMLP Model Parameters
+    parser.add_argument('-amlp_dim', type=int, default=32)
+    parser.add_argument('-amlp_fn', default='softmax')
 
     # Pyraformer parameters.
     parser.add_argument('-window_size', type=str, default='[4, 4, 4]') # The number of children of a parent node.

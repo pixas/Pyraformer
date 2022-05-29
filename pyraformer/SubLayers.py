@@ -1,8 +1,9 @@
+from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
 
 from .Modules import ScaledDotProductAttention
-
+from efficient_attention import AMLP
 
 class MultiHeadAttention(nn.Module):
     """ Multi-Head Attention module """
@@ -57,6 +58,46 @@ class MultiHeadAttention(nn.Module):
         # Combine the last two dimensions to concatenate all the heads together: b x lq x (n*dv)
         output = output.transpose(1, 2).contiguous().view(sz_b, len_q, -1)
         output = self.dropout(self.fc(output))
+        output += residual
+
+        if not self.normalize_before:
+            output = self.layer_norm(output)
+        return output, attn
+
+
+class AMLPLayer(nn.Module):
+    def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1, normalize_before=True, ffn_dimension=16, activation_fn='softmax'):
+        super().__init__()
+        self.normalize_before = normalize_before
+        self.n_head = n_head
+        self.d_k = d_k
+        self.d_v = d_v
+        
+        self.amlp = AMLP(
+            num_heads=n_head,
+            embed_dim=d_model,
+            ffn_dimension=ffn_dimension,
+            activation_fn=activation_fn
+        )
+        
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+        self.dropout = nn.Dropout(dropout)
+    
+    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask=None):
+        d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
+        bsz, q_len, _ = q.shape
+        k_len = k.shape[1]
+        
+        q = q.transpose(0, 1)
+        k = k.transpose(0, 1)
+        v = v.transpose(0, 1)
+        residual = q
+        if self.normalize_before:
+            q = self.layer_norm(q)
+        
+        output, attn = self.amlp(q, k, v, key_padding_mask=mask)
+        output = output.transpose(0, 1)
+        output = self.dropout(output)
         output += residual
 
         if not self.normalize_before:

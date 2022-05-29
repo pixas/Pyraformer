@@ -94,8 +94,8 @@ class AMLPLayer(nn.Module):
         residual = q
         if self.normalize_before:
             q = self.layer_norm(q)
-        print(mask.shape)
-        output, attn = self.amlp(q, k, v, key_padding_mask=mask)
+
+        output, attn = self.amlp(q, k, v)
         output = output.transpose(0, 1)
         output = self.dropout(output)
         output += residual

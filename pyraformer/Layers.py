@@ -217,6 +217,7 @@ class EncoderLayer(nn.Module):
             enc_output = self.slf_attn(enc_input)
             enc_slf_attn = None
         else:
+            print(enc_input.shape)
             enc_output, enc_slf_attn = self.slf_attn(enc_input, enc_input, enc_input, mask=slf_attn_mask)
 
         enc_output = self.pos_ffn(enc_output)

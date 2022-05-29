@@ -285,6 +285,7 @@ def parse_args():
     parser.add_argument('-data', type=str, default='ETTh1')
     parser.add_argument('-root_path', type=str, default='./data/ETT/', help='root path of the data file')
     parser.add_argument('-data_path', type=str, default='ETTh1.csv', help='data file')
+    parser.add_argument('-save_path', type=str, default='baseline', help='folder name of saved models')
 
     # Dataloader parameters.
     parser.add_argument('-input_size', type=int, default=168)
@@ -352,7 +353,7 @@ def main(opt, iter_index):
     print('[Info] Number of parameters: {}'.format(num_params))
 
     """ train or evaluate the model """
-    model_save_dir = 'models/LongRange/{}/{}/'.format(opt.data, opt.predict_step)
+    model_save_dir = 'models/LongRange/{}/{}/'.format(opt.data, opt.save_path + '_' + opt.predict_step)
     os.makedirs(model_save_dir, exist_ok=True)
     model_save_dir += 'best_iter{}.pth'.format(iter_index)
     if opt.eval:

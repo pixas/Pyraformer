@@ -353,7 +353,7 @@ def main(opt, iter_index):
     print('[Info] Number of parameters: {}'.format(num_params))
 
     """ train or evaluate the model """
-    model_save_dir = 'models/LongRange/{}/{}/'.format(opt.data, opt.save_path + '_' + opt.predict_step)
+    model_save_dir = 'models/LongRange/{}/{}_{}/'.format(opt.data, opt.save_path, opt.predict_step)
     os.makedirs(model_save_dir, exist_ok=True)
     model_save_dir += 'best_iter{}.pth'.format(iter_index)
     if opt.eval:

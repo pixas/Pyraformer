@@ -87,11 +87,11 @@ class AMLPLayer(nn.Module):
         d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
         bsz, q_len, _ = q.shape
         k_len = k.shape[1]
+        residual = q
         
         q = q.transpose(0, 1)
         k = k.transpose(0, 1)
         v = v.transpose(0, 1)
-        residual = q
         if self.normalize_before:
             q = self.layer_norm(q)
 

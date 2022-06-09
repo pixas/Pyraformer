@@ -28,7 +28,7 @@ class Encoder(nn.Module):
                 ])
         else:
             self.layers = nn.ModuleList([
-                EncoderLayer(opt.d_model, opt.d_inner_hid, opt.n_head, opt.d_k, opt.d_v, dropout=opt.dropout, \
+                EncoderLayer(opt, \
                     normalize_before=False) for i in range(opt.n_layer)
                 ])
 

@@ -188,7 +188,8 @@ class EncoderLayer(nn.Module):
             d_model, d_inner, dropout=dropout, normalize_before=normalize_before)
 
     def build_self_attention(self, opt):
-        if opt.attn_type == 'amlp':
+        self_attn = opt.enc_attn_type
+        if self_attn != 'mha':
             attn = EfficientAttnLayer(
                 opt,
                 normalize_before=self.normalize_before,
@@ -238,15 +239,12 @@ class DecoderLayer(nn.Module):
     
     def build_cross_attention(self, opt):
         cross_attn_type = opt.dec_cross_attn
-        if cross_attn_type == 'amlp':
+        if cross_attn_type != 'mha':
             attn = EfficientAttnLayer(
                 opt,
                 normalize_before=self.normalize_before,
             )
-        elif cross_attn_type == 'abc':
-            attn = EfficientAttnLayer(
-                opt, normalize_before=self.normalize_before
-            )
+
         else:
             attn = MultiHeadAttention(
                 opt.n_head,

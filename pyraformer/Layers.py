@@ -174,7 +174,6 @@ class EncoderLayer(nn.Module):
         d_v = opt.d_v
         dropout=opt.dropout
         d_inner = opt.d_inner_hid
-        attn_type = opt.attn_type
         self.normalize_before = normalize_before
         self.use_tvm = use_tvm
         if use_tvm:

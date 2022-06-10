@@ -1,7 +1,7 @@
 # ETTh1
-python long_range_main.py -data ETTh1 -input_size 168 -predict_step 168 -n_head 6 -enc_attn_type abc -enc_landmarks 64 -dec_cross_attn abc -dec_cross_landmarks 64
-python long_range_main.py -data ETTh1 -input_size 168 -predict_step 336 -n_head 6 -enc_attn_type abc -enc_landmarks 64 -dec_cross_attn abc -dec_cross_landmarks 64
-python long_range_main.py -data ETTh1 -input_size 336 -predict_step 720 -inner_size 5 -n_head 6 -enc_attn_type abc -enc_landmarks 64 -dec_cross_attn abc -dec_cross_landmarks 64
+python long_range_main.py -data ETTh1 -input_size 168 -predict_step 168 -n_head 4 -enc_attn_type abc -enc_landmarks 64 -dec_cross_attn abc -dec_cross_landmarks 64
+python long_range_main.py -data ETTh1 -input_size 168 -predict_step 336 -n_head 4 -enc_attn_type abc -enc_landmarks 64 -dec_cross_attn abc -dec_cross_landmarks 64
+python long_range_main.py -data ETTh1 -input_size 336 -predict_step 720 -inner_size 5 -n_head 4 -enc_attn_type abc -enc_landmarks 64 -dec_cross_attn abc -dec_cross_landmarks 64
 
 # ETTm1
 python long_range_main.py -data ETTm1 -data_path ETTm1.csv -input_size 384 -predict_step 96 \

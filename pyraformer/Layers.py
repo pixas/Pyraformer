@@ -2,7 +2,7 @@ from torch.functional import align_tensors
 import torch.nn as nn
 
 from torch.nn.modules.linear import Linear
-from .SubLayers import AMLPLayer, MultiHeadAttention, PositionwiseFeedForward
+from .SubLayers import EfficientAttnLayer, MultiHeadAttention, PositionwiseFeedForward
 import torch
 from .embed import DataEmbedding, CustomEmbedding
 import math
@@ -189,15 +189,9 @@ class EncoderLayer(nn.Module):
 
     def build_self_attention(self, opt):
         if opt.attn_type == 'amlp':
-            attn = AMLPLayer(
-                opt.n_head,
-                opt.d_model,
-                opt.d_k,
-                opt.d_v,
-                opt.dropout,
+            attn = EfficientAttnLayer(
+                opt,
                 normalize_before=self.normalize_before,
-                ffn_dimension=opt.amlp_dim,
-                activation_fn=opt.amlp_fn
             )
         else:
             attn = MultiHeadAttention(
@@ -227,10 +221,10 @@ class EncoderLayer(nn.Module):
 class DecoderLayer(nn.Module):
     """ Compose with two layers """
 
-    def __init__(self, d_model, d_inner, n_head, d_k, d_v, dropout=0.1, normalize_before=True):
+    def __init__(self, opt, d_model, d_inner, dropout=0.1, normalize_before=True):
         super(DecoderLayer, self).__init__()
-        self.slf_attn = MultiHeadAttention(
-            n_head, d_model, d_k, d_v, dropout=dropout, normalize_before=normalize_before)
+        self.normalize_before = normalize_before
+        self.slf_attn = self.build_cross_attention(opt)
         self.pos_ffn = PositionwiseFeedForward(
             d_model, d_inner, dropout=dropout, normalize_before=normalize_before)
 
@@ -241,6 +235,29 @@ class DecoderLayer(nn.Module):
         enc_output = self.pos_ffn(enc_output)
 
         return enc_output, enc_slf_attn
+    
+    def build_cross_attention(self, opt):
+        cross_attn_type = opt.dec_cross_attn
+        if cross_attn_type == 'amlp':
+            attn = EfficientAttnLayer(
+                opt,
+                normalize_before=self.normalize_before,
+            )
+        elif cross_attn_type == 'abc':
+            attn = EfficientAttnLayer(
+                opt, normalize_before=self.normalize_before
+            )
+        else:
+            attn = MultiHeadAttention(
+                opt.n_head,
+                opt.d_model,
+                opt.d_k,
+                opt.d_v,
+                dropout = opt.dropout,
+                normalize_before=self.normalize_before
+            )
+        
+        return attn
 
 
 class ConvLayer(nn.Module):
@@ -419,9 +436,9 @@ class Decoder(nn.Module):
         self.mask = mask
 
         self.layers = nn.ModuleList([
-            DecoderLayer(opt.d_model, opt.d_inner_hid, opt.n_head, opt.d_k, opt.d_v, dropout=opt.dropout, \
+            DecoderLayer(opt, opt.d_model, opt.d_inner_hid, dropout=opt.dropout, \
                 normalize_before=False),
-            DecoderLayer(opt.d_model, opt.d_inner_hid, opt.n_head, opt.d_k, opt.d_v, dropout=opt.dropout, \
+            DecoderLayer(opt, opt.d_model, opt.d_inner_hid, dropout=opt.dropout, \
                 normalize_before=False)
             ])
 

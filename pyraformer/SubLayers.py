@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .Modules import ScaledDotProductAttention
-from efficient_attention import AMLP
+from efficient_attention import AMLP, ABC
 
 class MultiHeadAttention(nn.Module):
     """ Multi-Head Attention module """
@@ -65,28 +65,24 @@ class MultiHeadAttention(nn.Module):
         return output, attn
 
 
-class AMLPLayer(nn.Module):
-    def __init__(self, n_head, d_model, d_k, d_v, dropout=0.1, normalize_before=True, ffn_dimension=16, activation_fn='softmax'):
+class EfficientAttnLayer(nn.Module):
+    def __init__(self, opt, normalize_before=True):
         super().__init__()
         self.normalize_before = normalize_before
-        self.n_head = n_head
-        self.d_k = d_k
-        self.d_v = d_v
+
+        self.d_k = opt.d_k
+        self.d_v = opt.d_v
+
+        dropout = opt.dropout
+        self.attn = self.build_self_attention(opt)
         
-        self.amlp = AMLP(
-            num_heads=n_head,
-            embed_dim=d_model,
-            ffn_dimension=ffn_dimension,
-            activation_fn=activation_fn
-        )
-        
-        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+        self.layer_norm = nn.LayerNorm(opt.d_model, eps=1e-6)
         self.dropout = nn.Dropout(dropout)
     
     def forward(self, q: Tensor, k: Tensor, v: Tensor, mask=None):
-        d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
-        bsz, q_len, _ = q.shape
-        k_len = k.shape[1]
+        # d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
+        # bsz, q_len, _ = q.shape
+        # k_len = k.shape[1]
         residual = q
         
         q = q.transpose(0, 1)
@@ -95,7 +91,7 @@ class AMLPLayer(nn.Module):
         if self.normalize_before:
             q = self.layer_norm(q)
 
-        output, attn = self.amlp(q, k, v)
+        output, attn = self.attn(q, k, v, attn_mask=mask)
         output = output.transpose(0, 1)
         output = self.dropout(output)
         output += residual
@@ -103,6 +99,34 @@ class AMLPLayer(nn.Module):
         if not self.normalize_before:
             output = self.layer_norm(output)
         return output, attn
+    
+    def build_self_attention(self, opt):
+        attn_type = opt.enc_attn_type
+        if attn_type == 'amlp':
+            attn = AMLP(
+                num_heads=opt.n_head,
+                embed_dim=opt.d_model,
+                ffn_dimension=opt.enc_amlp_dim,
+                activation_fn=opt.enc_amlp_fn
+            )
+        elif attn_type == 'abc':
+            attn = ABC(
+                num_heads=opt.n_head,
+                embed_dim=opt.d_model,
+                num_landmarks=opt.enc_landmarks
+                
+            )
+        else:
+            attn = MultiHeadAttention(
+                opt.n_head,
+                opt.d_model,
+                opt.d_k,
+                opt.d_v,
+                dropout = opt.dropout,
+                normalize_before=self.normalize_before
+            )
+        
+        return attn
 
 
 class PositionwiseFeedForward(nn.Module):

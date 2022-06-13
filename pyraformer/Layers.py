@@ -190,6 +190,7 @@ class EncoderLayer(nn.Module):
         self_attn = opt.enc_attn_type
         if self_attn != 'mha':
             attn = EfficientAttnLayer(
+                'self',
                 opt,
                 normalize_before=self.normalize_before,
             )
@@ -240,6 +241,7 @@ class DecoderLayer(nn.Module):
         cross_attn_type = opt.dec_cross_attn
         if cross_attn_type != 'mha':
             attn = EfficientAttnLayer(
+                'cross',
                 opt,
                 normalize_before=self.normalize_before,
             )

@@ -66,7 +66,7 @@ class MultiHeadAttention(nn.Module):
 
 
 class EfficientAttnLayer(nn.Module):
-    def __init__(self, opt, normalize_before=True):
+    def __init__(self, attn_loc, opt, normalize_before=True):
         super().__init__()
         self.normalize_before = normalize_before
 
@@ -74,7 +74,10 @@ class EfficientAttnLayer(nn.Module):
         self.d_v = opt.d_v
 
         dropout = opt.dropout
-        self.attn = self.build_self_attention(opt)
+        if attn_loc == 'self':
+            self.attn = self.build_self_attention(opt)
+        elif attn_loc == 'cross':
+            self.attn = self.build_cross_attention(opt)
         
         self.layer_norm = nn.LayerNorm(opt.d_model, eps=1e-6)
         self.dropout = nn.Dropout(dropout)
@@ -114,6 +117,34 @@ class EfficientAttnLayer(nn.Module):
                 num_heads=opt.n_head,
                 embed_dim=opt.d_model,
                 num_landmarks=opt.enc_landmarks
+                
+            )
+        else:
+            attn = MultiHeadAttention(
+                opt.n_head,
+                opt.d_model,
+                opt.d_k,
+                opt.d_v,
+                dropout = opt.dropout,
+                normalize_before=self.normalize_before
+            )
+        
+        return attn
+    
+    def build_cross_attention(self, opt):
+        attn_type = opt.dec_cross_attn
+        if attn_type == 'amlp':
+            attn = AMLP(
+                num_heads=opt.n_head,
+                embed_dim=opt.d_model,
+                ffn_dimension=opt.dec_cross_amlp_dim,
+                activation_fn=opt.dec_cross_amlp_fn
+            )
+        elif attn_type == 'abc':
+            attn = ABC(
+                num_heads=opt.n_head,
+                embed_dim=opt.d_model,
+                num_landmarks=opt.dec_landmarks
                 
             )
         else:

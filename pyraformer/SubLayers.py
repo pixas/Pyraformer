@@ -128,7 +128,7 @@ class EfficientAttnLayer(nn.Module):
                 dropout = opt.dropout,
                 normalize_before=self.normalize_before
             )
-        
+        print(attn.__class__)
         return attn
     
     def build_cross_attention(self, opt):
@@ -156,7 +156,7 @@ class EfficientAttnLayer(nn.Module):
                 dropout = opt.dropout,
                 normalize_before=self.normalize_before
             )
-        
+        print(attn.__class__)
         return attn
 
 

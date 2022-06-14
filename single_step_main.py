@@ -246,6 +246,8 @@ def arg_parser():
     # Path parameters
     parser.add_argument('-data_path', type=str, default='data/elect/')
     parser.add_argument('-dataset', type=str, default='elect')
+    parser.add_argument('-save_path', type=str, default='baseline', 
+                        help='folder name of saved models')
 
     # Train parameters
     parser.add_argument('-epoch', type=int, default=10)
@@ -310,7 +312,7 @@ def main():
     print('[Info] Number of parameters: {}'.format(num_params))
 
     """ train the model """
-    model_save_dir = 'models/SingleStep/{}/'.format(opt.dataset)
+    model_save_dir = 'models/SingleStep/{}/{}/'.format(opt.dataset, opt.save_path)
     os.makedirs(model_save_dir, exist_ok=True)
     model_save_dir += 'best_model.pth'
     if opt.eval:
